@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 // This is the module definition for the compression module with the following new designs:
 //	+ Instead of relying on the external counting clock, we shall have the internal
 //    counter that will be enabled under "silence" mode, which should increment at the rate 
@@ -91,6 +92,9 @@ localparam PUSH3 = 4;
 localparam WAIT3 = 5;
 localparam ALARM3 = 6;
 
+// Common Flush state, only used when module is getting disabled
+localparam FLUSH = 7;
+
 
 
 always @(posedge clk40m)
@@ -162,6 +166,7 @@ begin
 		data_flag <= 0;
 		first_push <= 1;
 		wake_up_flag <= 0;
+		mode <= 1;
 	end
 	else begin
 		
@@ -190,46 +195,45 @@ begin
 		PUSH: 
 		begin
 			if (EN) begin // module is enbaled and actively accumulate-push
-				if (wake_up_flag) begin
+				if (wake_up_flag) 
+				begin
 					wake_up_flag <= 0;
 					silence_counter <= 0;
 				end
 				else begin
-				if (pix_valid_rise) begin // there is valid data coming through
-					if (acc_counter < 2) begin // accumulated less than 2 words, acc_cnt = 0, 1. We keep on accumulating
-						acc_counter <= acc_counter +1;
-						acc_temp_pattern <= {acc_temp_pattern[4:0], pixel_1bit}; // left shift by 5 << 5
-					end
-					else begin 			// accumulated exactly 2 words, now we have the third one
-						acc_counter <= 0;  // clear up the accumulation
-						acc_temp_pattern <= 0;
-						if (first_push) begin // very first round of push, we push the data out anyway
-							data_flag <= 1;
-							repeating_pattern <= {acc_temp_pattern, pixel_1bit};
-							first_push <= 0;
+					if (pix_valid_rise) begin // there is valid data coming through
+						if (acc_counter < 2) begin // accumulated less than 2 words, acc_cnt = 0, 1. We keep on accumulating
+							acc_counter <= acc_counter +1;
+							acc_temp_pattern <= {acc_temp_pattern[4:0], pixel_1bit}; // left shift by 5 << 5
 						end
-					  	else begin
-					  		if ({acc_temp_pattern, pixel_1bit} != repeating_pattern ) begin // if the new 3 cycle data does not match the repeating pattern
-					  			data_flag <= 1;
-					  			repeating_pattern <= {acc_temp_pattern, pixel_1bit};
-					  		end
-					  		else begin // if the new 3 cycles data matches the repeating pattern, we jump into wait state, and we start incrementing the counter
-					  			 data_flag <= 0;
-					  			 silence_counter <= silence_counter +1;
+						else begin 			// accumulated exactly 2 words, now we have the third one
+							acc_counter <= 0;  // clear up the accumulation
+							acc_temp_pattern <= 0;
+							if (first_push) begin // very first round of push, we push the data out anyway
+								data_flag <= 1;
+								repeating_pattern <= {acc_temp_pattern, pixel_1bit};
+								first_push <= 0;
+							end
+					  		else begin
+					  			if ({acc_temp_pattern, pixel_1bit} != repeating_pattern ) begin // if the new 3 cycle data does not match the repeating pattern
+					  				data_flag <= 1;
+					  				repeating_pattern <= {acc_temp_pattern, pixel_1bit};
+					  			end
+					  			else begin // if the new 3 cycles data matches the repeating pattern, we jump into wait state, and we start incrementing the counter
+					  			 	data_flag <= 0;
+					  			 	silence_counter <= silence_counter +1;
 					  			end
 					  			
 					  		end
-					  		
-					  	end  	
-							
-					end
+					  		  	
+						end
 						
 					end
+					else if (data_flag) begin
+						data_flag <= 0;
+					end
 				end
-				else if (data_flag) begin
-					data_flag <= 0;
-				end
-				end
+				
 			end
 			else begin // module disbaled, we clear up the registeres we used
 				repeating_pattern <= 0;
@@ -263,10 +267,13 @@ begin
 						data_flag <= 1;
 						repeating_pattern <= {acc_temp_pattern, pixel_1bit};
 						end
-						else begin
-						// pattern has not changed, we keep on incrementing the counter
-						silence_counter <= silence_counter +1; // n -> n+1
-							
+						else if (silence_counter == 15'h7fff) begin
+						// if the silence counter has reached 7fff and it is still repeating
+						silence_counter <= 1; // n -> n+1
+						end
+						else begin 
+							// pattern has not changed, we keep on incrementing the counter
+							silence_counter <= silence_counter +1;
 						end
 						
 					end
@@ -293,8 +300,8 @@ begin
 			// check if we just switched back from WAIT3
 				if (wake_up_flag)
 					begin
-					wake_up_flag <= 0;
-					silence_counter <= 0; // clear silence count
+						wake_up_flag <= 0;
+						silence_counter <= 0; // clear silence count
 					end
 				else
 					begin
@@ -316,6 +323,7 @@ begin
 					end
 
 				end
+			end
 			else begin // module is disabled, we will jump back to IDLE next cycle, clean up the used registers
 				repeating_pattern <= 0;
 				wake_up_flag <= 0;
@@ -335,8 +343,11 @@ begin
 						repeating_pattern <= pix_in_mask;
 						data_flag <= 1;
 						wake_up_flag <= 1;  
-					end
-					else // pattern is repeating, we increment the silence count 
+					end  // pattern is repeating, we increment the silence count
+					else if (silence_counter == 15'h7fff) begin
+						silence_counter <= 1;
+					end 
+					else
 						begin
 							silence_counter <= silence_counter +1; // n -> n+1
 							data_flag <= 0;
@@ -359,8 +370,30 @@ begin
 
 		ALARM3: 
 		begin
+			// Under alarm3, our silence counter is 0x7fff, because the phase is off by 1 cycle to the input data
+			// We will for sure be under the state of a new pixel data
+			// This may go back to PUSH3 or WAIT3 but will not be affected by enable
+			if (pix_valid_rise) begin
+				if (repeating_pattern != pix_in_mask) begin // the new data is not the same as before
+					silence_counter <= 0;
+					data_flag <= 1;
+					repeating_pattern <=  pix_in_mask;
+				end
+				else begin // the new data is still the same, we will go back to WAIT3, but the silence counter should be 1
+					silence_counter <= 1; // 7fff -> 1
+
+				end
+			end
 			
 		end
+
+
+		FLUSH: // dedicated state for timestamp flush
+		begin 
+		
+		end
+
+
 		default : /* default */;
 	endcase
 
@@ -385,7 +418,7 @@ begin
 		begin
 			if (EN) begin
 				if (pix_valid_rise) begin
-					if (one_bit) begin
+					if (mode) begin
 						next_state = PUSH;
 					end
 					else begin
@@ -449,18 +482,18 @@ begin
 			end
 			else begin
 				// module is disabled, we export the silence counter and jump back to push to ease back in
-				enc_ready = 1;
-				enc_data = {1'b1, silence_counter};
-				next_state = PUSH;
+				next_state = FLUSH;
 			end
 			
 		end
 
 		ALARM: 
 		begin
-			next_state = WAIT;
+			// it will enter this state when silence counter reaches 7fff AND the pattern is the same
 			enc_data = 16'h8000;
 			enc_ready = 1;
+			next_state = WAIT;
+			
 		end
 
 		/**
@@ -500,18 +533,22 @@ begin
 			// next state logic to either go back to push or go to alarm
 			// if the pattern is different now
 			if (EN) begin
-				if (pix_valid_rise && (pix_in_mask != repeating_pattern)) begin
-					next_state = PUSH3;
-				end
-				else if (silence_counter == 15'h7fff) begin // if silence counter has reached limit
-					next_state = ALARM3;
+				if (pix_valid_rise) begin
+					
+					if (pix_in_mask != repeating_pattern) begin
+                	// Pattern broke.
+                		next_state = PUSH3;
+            		end
+            		else if (silence_counter == 15'h7fff) begin
+                	// Pattern is STILL repeating at maximum count.
+               			next_state = ALARM3;
+            		end
+
 				end
 			end
 			else begin // if module was disabled at this state, we switch back to push3 state to export pattern, but we will export the 
-				// silence counter remained
-				enc_data = {1'b1, silence_counter};
-				enc_ready = 1;
-				next_state = PUSH3;
+				
+				next_state = FLUSH;
 			end
 			
 			
@@ -522,9 +559,22 @@ begin
 			// only assert a single clock cycle of alarm
 			enc_data = 16'h8000;
 			enc_ready = 1;
+			
 			next_state = WAIT3;
 		end
 	
+
+		FLUSH: // dedicated state for timestamp flush
+		begin 
+			enc_data = {1'b1, silence_counter};
+			enc_ready = 1;
+			if (mode) begin
+				next_state = PUSH;
+			end
+			else next_state = PUSH3;
+		end
+
+
 		default : /* default */;
 	endcase
 
