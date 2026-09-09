@@ -1,0 +1,470 @@
+
+#
+# Mnemonic Maps
+#
+mmap new  -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new  -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+array unset createdGroup
+array set createdGroup {}
+#
+# Groups
+#
+if {[catch {group get -using [list {CARR_arb}]}]} {
+set createdGroup([list {CARR_arb}]) 1
+catch {group new -name CARR_arb -overlay 0}
+}
+if {[catch {group get -using [list {FIFO_0}]}]} {
+set createdGroup([list {FIFO_0}]) 1
+catch {group new -name FIFO_0 -overlay 0}
+}
+if {[catch {group get -using [list {FIFO_7}]}]} {
+set createdGroup([list {FIFO_7}]) 1
+catch {group new -name FIFO_7 -overlay 0}
+}
+if {[catch {group get -using [list {FIFO_1}]}]} {
+set createdGroup([list {FIFO_1}]) 1
+catch {group new -name FIFO_1 -overlay 0}
+}
+if {[catch {group get -using [list {FIFO_5}]}]} {
+set createdGroup([list {FIFO_5}]) 1
+catch {group new -name FIFO_5 -overlay 0}
+}
+if {[info exists createdGroup([list {CARR_arb}])]} {
+group using CARR_arb
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.almost_full[7:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.burst_cnt_d[3:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.burst_cnt_q[3:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.clk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.do_pop_slot}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.empty[7:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.sel_idx_d[2:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.sel_idx_q[2:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.pop[7:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.CARR_arb_inst.rst_n}]} ]
+}
+
+if {[info exists createdGroup([list {FIFO_0}])]} {
+group using FIFO_0
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wclk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wrst_n}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wpush}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.walmost_full}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.used_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wfull}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wbin_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wbin_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_r1[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_r2[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_sync_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rclk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.ralmost_full}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rbin_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rbin_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rbin_sync_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rempty}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_sync_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_w1[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_w2[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rpop}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rrst_n}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rused[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.used_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wbin_sync_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_next[8:0]}]} ]
+}
+
+if {[info exists createdGroup([list {FIFO_7}])]} {
+group using FIFO_7
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.ralmost_full}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rbin_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rbin_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rbin_sync_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rclk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rempty}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rgray_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rgray_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rgray_sync_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rgray_w1[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rgray_w2[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rpop}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rrst_n}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.rused[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.used_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.used_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.walmost_full}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wbin_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wbin_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wbin_sync_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wclk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wfull}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wgray_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wgray_next[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wgray_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wgray_r1[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wgray_r2[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wgray_sync_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wpush}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[7].u_fifo.wrst_n}]} ]
+}
+
+if {[info exists createdGroup([list {FIFO_1}])]} {
+group using FIFO_1
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.ralmost_full}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wrst_n}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rbin_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rbin_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rbin_sync_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rclk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rempty}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_sync_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_w1[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_w2[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rpop}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rrst_n}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rused[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.used_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.used_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.walmost_full}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wbin_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wbin_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wbin_sync_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wclk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wfull}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_next[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_r1[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_r2[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_sync_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wpush}]} ]
+}
+
+if {[info exists createdGroup([list {FIFO_5}])]} {
+group using FIFO_5
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.ralmost_full}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wrst_n}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rbin_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rbin_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rbin_sync_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rclk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rempty}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_sync_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_w1[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_w2[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rpop}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rrst_n}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rused[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.used_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.used_w[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.walmost_full}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wbin_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wbin_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wbin_sync_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wclk}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wfull}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_d[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_next[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_q[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_r1[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_r2[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_sync_r[8:0]}]} ] \
+    [subst  {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wpush}]} ]
+}
+
+
+set groupId0 [waveform add -groups CARR_arb]
+
+set id [waveform add -signals [subst  {
+	{[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.ADDR_W}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.AFULL_MARGIN}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.PTR_W}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.DEPTH}]}
+	} ]]
+
+set groupId0 [waveform add -groups FIFO_0]
+set gpGlist0 [waveform hierarchy contents $groupId0]
+set gpID0 [lindex $gpGlist0 0]
+foreach {name attrs} [subst  {
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wclk}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wrst_n}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wpush}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.walmost_full}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.used_w[8:0]}]} {-radix %d}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wfull}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wbin_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wbin_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_r1[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_r2[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_sync_r[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rclk}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.ralmost_full}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rbin_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rbin_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rbin_sync_w[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rempty}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_sync_w[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_w1[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rgray_w2[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rpop}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rrst_n}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.rused[8:0]}]} {-radix %d}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.used_r[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wbin_sync_r[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[0].u_fifo.wgray_next[8:0]}]} {}
+}] childcmds {
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+} {
+    set expected [ join [waveform signals -format path $gpID0] ]
+    if {[string equal $name $expected] || $name == "cdivider"} {
+        if {$attrs != ""} {
+            eval waveform format $gpID0 $attrs
+        }
+        if { $childcmds != ""} {
+            eval $childcmds
+        }
+    }
+    set gpGlist0 [lrange $gpGlist0 1 end]
+    set gpID0 [lindex $gpGlist0 0]
+}
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups FIFO_1]
+set gpGlist0 [waveform hierarchy contents $groupId0]
+set gpID0 [lindex $gpGlist0 0]
+foreach {name attrs} [subst  {
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.ralmost_full}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wrst_n}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rbin_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rbin_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rbin_sync_w[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rclk}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rempty}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_sync_w[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_w1[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rgray_w2[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rpop}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rrst_n}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.rused[8:0]}]} {-radix %d}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.used_r[8:0]}]} {-radix %d}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.used_w[8:0]}]} {-radix %d}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.walmost_full}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wbin_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wbin_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wbin_sync_r[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wclk}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wfull}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_next[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_r1[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_r2[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wgray_sync_r[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[1].u_fifo.wpush}]} {}
+}] childcmds {
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+} {
+    set expected [ join [waveform signals -format path $gpID0] ]
+    if {[string equal $name $expected] || $name == "cdivider"} {
+        if {$attrs != ""} {
+            eval waveform format $gpID0 $attrs
+        }
+        if { $childcmds != ""} {
+            eval $childcmds
+        }
+    }
+    set gpGlist0 [lrange $gpGlist0 1 end]
+    set gpID0 [lindex $gpGlist0 0]
+}
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups FIFO_5]
+set gpGlist0 [waveform hierarchy contents $groupId0]
+set gpID0 [lindex $gpGlist0 0]
+foreach {name attrs} [subst  {
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.ralmost_full}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wrst_n}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rbin_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rbin_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rbin_sync_w[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rclk}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rempty}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_sync_w[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_w1[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rgray_w2[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rpop}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rrst_n}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.rused[8:0]}]} {-radix %d}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.used_r[8:0]}]} {-radix %d}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.used_w[8:0]}]} {-radix %d}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.walmost_full}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wbin_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wbin_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wbin_sync_r[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wclk}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wfull}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_d[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_next[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_q[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_r1[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_r2[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wgray_sync_r[8:0]}]} {}
+    {[format {tb_async_fifo_arb.G_FIFOS[5].u_fifo.wpush}]} {}
+}] childcmds {
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+    {}
+} {
+    set expected [ join [waveform signals -format path $gpID0] ]
+    if {[string equal $name $expected] || $name == "cdivider"} {
+        if {$attrs != ""} {
+            eval waveform format $gpID0 $attrs
+        }
+        if { $childcmds != ""} {
+            eval $childcmds
+        }
+    }
+    set gpGlist0 [lrange $gpGlist0 1 end]
+    set gpID0 [lindex $gpGlist0 0]
+}
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups FIFO_7]
+waveform hierarchy collapse $groupId0
+
+
+waveform xview limits 0 27863880ps
