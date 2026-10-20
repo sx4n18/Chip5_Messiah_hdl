@@ -1,0 +1,146 @@
+
+#
+# Mnemonic Maps
+#
+mmap new  -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new  -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+array unset createdGroup
+array set createdGroup {}
+#
+# Groups
+#
+if {[catch {group get -using [list {event_interface}]}]} {
+set createdGroup([list {event_interface}]) 1
+catch {group new -name event_interface -overlay 0}
+}
+if {[info exists createdGroup([list {event_interface}])]} {
+group using event_interface
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_packet_builder.event_valid}]} ] \
+    [subst  {[format {tb_packet_builder.event_type[3:0]}]} ] \
+    [subst  {[format {tb_packet_builder.event_fifo_id[2:0]}]} ] \
+    [subst  {[format {tb_packet_builder.event_time0[44:0]}]} ] \
+    [subst  {[format {tb_packet_builder.event_time1[44:0]}]} ] \
+    [subst  {[format {tb_packet_builder.event_ack}]} ]
+}
+
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.FIFO_DEPTH}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.CLK_PERIOD}]}
+	} ]]
+waveform format $id -radix %d
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.ID_W}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.N_CH}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.CLK75M}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.rst_n}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.data_valid}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.SEL_ID[1:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.FIFO_DAT[15:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.FRAME_FIFO_AFULL}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.EMPTY[3:0]}]}
+	} ]]
+waveform format $id -radix %b
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.do_pop_slot}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.FRAME_FIFO_PUSH}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.DATA_2_FIFO[15:0]}]}
+	} ]]
+
+set groupId0 [waveform add -groups event_interface]
+
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.fifo_count[0:3]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.fifo_mem[0:3]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.fifo_rd_ptr[0:3]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.fifo_wr_ptr[0:3]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.k}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.observed[0:255]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.observed_count}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.response_data[15:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.response_id[1:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.sel_ch}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.ch}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.curr_state[4:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.next_state[4:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.event_t0_t1_cnt[1:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.event_time_buf[47:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.frame_cnt[13:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.payload_buf[15:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.payload_pending}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.payload_reserved}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.prev_id[1:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.dut.buf_id[1:0]}]}
+	} ]]
+
+waveform xview limits 0 12187500ps

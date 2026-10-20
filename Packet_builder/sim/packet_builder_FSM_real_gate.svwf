@@ -1,0 +1,102 @@
+
+#
+# Mnemonic Maps
+#
+mmap new  -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new  -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+#
+# Conditions
+#
+set expression tb_packet_builder.dut.n_123
+if {[catch {condition new -name  data_fifo_not_empty_real -expr $expression}] != ""} {
+    condition set -using data_fifo_not_empty_real -expr $expression
+}
+set expression {{tb_packet_builder.dut.n_136, tb_packet_builder.dut.n_158, tb_packet_builder.dut.n_164, tb_packet_builder.dut.n_167}}
+if {[catch {condition new -name  next_sate_real -expr $expression}] != ""} {
+    condition set -using next_sate_real -expr $expression
+}
+set expression {{tb_packet_builder.dut.n_167, tb_packet_builder.dut.n_164, tb_packet_builder.dut.n_158, tb_packet_builder.dut.n_136}}
+if {[catch {condition new -name  next_state_real_gate -expr $expression}] != ""} {
+    condition set -using next_state_real_gate -expr $expression
+}
+
+array unset createdGroup
+array set createdGroup {}
+#
+# Groups
+#
+if {[catch {group get -using [list {FSM}]}]} {
+set createdGroup([list {FSM}]) 1
+catch {group new -name FSM -overlay 0}
+}
+if {[catch {group get -using [list {Group 1}]}]} {
+set createdGroup([list {Group 1}]) 1
+catch {group new -name {Group 1} -overlay 0}
+}
+if {[info exists createdGroup([list {FSM}])]} {
+group using FSM
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {next_sate_real}]} ] \
+    [subst  {[format {tb_packet_builder.dut.curr_state[2:0]}]} ] \
+    [subst  {[format {tb_packet_builder.dut.frame_cnt[13:0]}]} ] \
+    [subst  {[format {data_fifo_not_empty_real}]} ] \
+    [subst  {[format {tb_packet_builder.dut.prev_id[1:0]}]} ] \
+    [subst  {[format {tb_packet_builder.dut.buf_id[1:0]}]} ] \
+    [subst  {[format {tb_packet_builder.dut.payload_buf[15:0]}]} ] \
+    [subst  {[format {tb_packet_builder.dut.payload_pending}]} ]
+}
+
+if {[info exists createdGroup([list {Group 1}])]} {
+group using {Group 1}
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+}
+
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.CLK75M}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.rst_n}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.do_pop_slot}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.payload_counter[15:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.EMPTY[3:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.data_valid}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.FIFO_DAT[15:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.SEL_ID[1:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.FRAME_FIFO_AFULL}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.FRAME_FIFO_PUSH}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_packet_builder.DATA_2_FIFO[15:0]}]}
+	} ]]
+
+set groupId0 [waveform add -groups FSM]
+
+
+waveform xview limits 0 2000ns

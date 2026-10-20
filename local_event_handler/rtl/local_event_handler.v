@@ -26,7 +26,31 @@
 //
 //   - disable the whole module:
 //   
-
+//   New edit: 19 Sep 2026
+//
+//   Ver. 0.1
+//   In this updated version, we added the following new features:
+//	+ New state dedicated as a resting state for block disabling *DOWN*
+//	+ Move the functionality of *RESET* to *DOWN*
+//	+ *RESET* now acts as a real reset state when the block just had a proper reset and waiting to be brought up
+//	+ Added new external command port: acq_start_cmd, a 40 Mhz one cycle pulse
+//	+ Added new output registers to be exposed to SPI: ACQ_START_T, BLK_DISABLE_T, BLK_ENABLE_T
+//
+//  New edit: 21 Sep 2026
+//
+//  Ver. 0.1.1
+//  In this small iteration, I added an extra signal in the event bus as in: *event_time_valid*. this signal is simply used
+//  to make the event information to be accurately sampled with the correct information so that we will not have event
+//  racing over the right timing T1.
+//
+//  New edit: 23 Sep 2026
+// 
+//  Ver. 0.1.2
+//  Added new port *encs_all_empty*, which is the indicator for all compressors are in idle state. This is because when blocks
+//  are getting disabled, they do not necessarily go to idle state right away, they may need to push out last few words.
+//  
+//  On top of it, I added register AFIFO_DRAIN_CNT to make sure FSM to wait at least 5 cycles before checking the clear signals
+//  from both producers and consumers. In this case, *encs_all_idle* and *fifo_all_empty*
 
 module local_event_handler (
 	input clk40m,    			// Clock runs at the same freqeuncy as the front end
@@ -34,23 +58,28 @@ module local_event_handler (
 	
 	// local command
 	input 			cmd_apply_mask, 	// the command that only applies this block to apply the mask
-	input [39:0]   	mask_shadow,  		// the shadow mask that was just transmitted through SPI
+	input [39:0]   		mask_shadow,  		// the shadow mask that was just transmitted through SPI
 
-	input           cmd_blk_enable, // the commad to enable or disable the block
+	input           	cmd_blk_enable, 	// the commad to enable or disable the block
 
 	// glbal configuration
+	//////// Ver 0.1 new////////
+	input			acq_start_cmd, 		// The acquisition start command to start the whole process
+	//////// Ver 0.1 new////////
+
 	input 			global_reconfig,    // the command to run global reconfiguration
 	input 			global_enable, 		
-	input 	[9:0]   new_NMAX,     		// the new shadow n_max for arbiter
+	input 	[9:0]   	new_NMAX,     		// the new shadow n_max for arbiter
 	input 			mode_1bit,           // 1-bit or 3-bit mode, by default it should be 0 --> 3-bit mode
 
 	// overflow
-	input 	[7:0]   fifo_overflow,      // the overflow flag from all 8 fifos
+	input 	[7:0]   	fifo_overflow,      // the overflow flag from all 8 fifos
 	// consumer status
 	input 			fifo_all_empty,     // all the fifos are empty
+	// producer status
+	input			encs_all_idle, 		// idle state indicator, all compressors empty
 
-
-	input 	[44:0]  mission_counter, 	// mission timer
+	input 	[44:0]  	mission_counter, 	// mission timer
 
 
 	// block control 
@@ -61,14 +90,20 @@ module local_event_handler (
 	// active mask
 	output 	reg [39:0] 	pix_mask_active,
 	output 	reg 		mode_1bit_active, 
-	output 	reg [9:0]		NMAX_active,
+	output 	reg [9:0]	NMAX_active,
 
 	// status
 	output 	reg		block_busy, 		// external flag to be read by SPI host
 	output 			block_enabled, 		// block active indicator 
+	//////// Ver 0.1 new////////
+	output	reg [44:0]	ACQ_START_T, 		// The time of the beginning of acquisition
+	output	reg [44:0]	BLK_DISABLE_T, 		// The time of the intentionally disabling
+	output  reg [44:0] 	BLK_ENABLE_T, 		// The time of the intentionally enabling
+	//////// Ver 0.1 new////////
 
 	// event interface to packet builder
 	output 	reg 		event_valid, 
+	output  reg 		event_time_valid, 	// special valid signal to indicate the validity of event time1
 	output	reg [3:0]	event_type, 
 	output	reg [2:0]	event_fifo_id, 
 	output	reg [44:0] 	event_time0, 
@@ -81,7 +116,7 @@ module local_event_handler (
 
 // system parameters
 localparam			RESET  	= 0;	
-localparam   		IDLE   	= 1;
+localparam   			IDLE   	= 1;
 localparam			CAPCHAT0= 2;
 localparam 			DISABLE_BLK = 3;
 localparam			WAIT_FIFO_EMPTY  = 4;
@@ -91,6 +126,7 @@ localparam 			ENABLE_BLK 		= 7;
 localparam 			CAPCHAT1 		= 8;
 //localparam 			CREATE_EVENT 	= 9;
 localparam 			WAIT_EVENT_ACK 	= 9;
+localparam			DOWN 		= 10; 	// resting state for block intentionally disabling
 
 
 // event type
@@ -114,6 +150,9 @@ reg 	[3:0] 	curr_state, next_state;
 reg 	[1:0] 	reconfig_type;
 
 reg 			event_ack_sync_x, event_ack_synced;
+
+
+reg 	[2:0] 		AFIFO_DRAIN_CNT;
 
 wire 				fifo_overflow_event;
 
@@ -177,19 +216,26 @@ always @(posedge clk40m or negedge rst_n) begin
 		event_fifo_id <= 0;
 		event_time0 <= 0;
 		event_time1 <= 0;
+		event_time_valid <= 0;
 		// status
 		block_busy <= 0;
-
+		// timestamp flag
+		ACQ_START_T <= 45'd0;
+		BLK_DISABLE_T <= 45'd0;
+		BLK_ENABLE_T <= 45'd0;
+		// patch
+		AFIFO_DRAIN_CNT <= 0;
 	end else begin
 		case (curr_state)
 		
 		RESET: begin 
 			// WHEN WE ARE READY TO FUNCTION, WE GET ALL THE CONFIGS READY
-			if (eff_enable) begin
+			if (eff_enable && acq_start_cmd) begin
 				compressor_enable <= 1;
 				pix_mask_active <= mask_shadow;
 				mode_1bit_active <= mode_1bit;
 				NMAX_active		<= new_NMAX;
+				ACQ_START_T		<= mission_counter;
 			end
 		end
 
@@ -232,17 +278,27 @@ always @(posedge clk40m or negedge rst_n) begin
 		begin 
 			// turn off the block 
 			compressor_enable <= 0;
+
+			// if this was intentional, we update the sticky flag
+			if (event_type == BLK_DISABLE_REQ) begin
+				BLK_DISABLE_T <= mission_counter;
+			end
+
 		end 
 
 
 		WAIT_FIFO_EMPTY:
 		begin 
+			if (AFIFO_DRAIN_CNT < 3'd5) begin
+				AFIFO_DRAIN_CNT <= AFIFO_DRAIN_CNT +1;
+			end
+
 
 		end 
 
 
 		RESET_AFIFO: 
-		begin 
+		begin 	AFIFO_DRAIN_CNT <= 0;
 			if (event_type == BLK_DISABLE_REQ) begin
 				block_busy <= 0;
 			end
@@ -270,6 +326,7 @@ always @(posedge clk40m or negedge rst_n) begin
         CAPCHAT1:
         begin 
         	event_time1 <= mission_counter;
+        	event_time_valid <= 1;
         end 		
         
 /*	remove redundent state 
@@ -284,8 +341,19 @@ always @(posedge clk40m or negedge rst_n) begin
 			if (event_ack_synced) begin
 				event_valid <= 0;
 				block_busy <= 0;
+				event_time_valid <= 0;
 			end
 		end
+
+
+	DOWN: 
+	begin 
+		// the resting state for the case when the block was intentionally turned off
+		if (eff_enable) begin
+			BLK_ENABLE_T <= mission_counter;
+			compressor_enable <= 1;
+		end
+	end
 
 
 		default : /* default */;
@@ -311,7 +379,7 @@ case (curr_state)
 
 		RESET: begin 
 			// WHEN WE ARE READY TO FUNCTION, WE GET ALL THE CONFIGS READY
-			if (eff_enable) begin
+			if (eff_enable && acq_start_cmd) begin
 				next_state = IDLE;
 			end
 		end
@@ -343,7 +411,7 @@ case (curr_state)
 
 		WAIT_FIFO_EMPTY: 
 		begin 
-			if (fifo_all_empty) begin
+			if (AFIFO_DRAIN_CNT >= 3'd5 && fifo_all_empty && encs_all_idle) begin
 				next_state = RESET_AFIFO;
 			end
 			
@@ -361,7 +429,7 @@ case (curr_state)
 				next_state = APPLY_CONFIG;
 			end
 			else if(event_type == BLK_DISABLE_REQ) begin 
-				next_state = RESET;
+				next_state = DOWN;
 			end
 		end 	
         
@@ -383,7 +451,7 @@ case (curr_state)
         	next_state = WAIT_EVENT_ACK;
         end
 
-/*   removed redundent state
+/*   removed redundant state
         CREATE_EVENT:
         begin 
         	next_state = WAIT_EVENT_ACK;
@@ -397,6 +465,16 @@ case (curr_state)
         	end
         end 
 	
+
+
+        DOWN: 
+        begin 
+        	if (eff_enable) begin
+        		next_state = IDLE;
+        	end
+        end
+
+
 	default : /* default */;
 endcase
 

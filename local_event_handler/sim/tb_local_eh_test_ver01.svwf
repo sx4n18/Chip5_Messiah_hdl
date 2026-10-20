@@ -1,0 +1,194 @@
+
+#
+# Mnemonic Maps
+#
+mmap new  -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new  -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+array unset createdGroup
+array set createdGroup {}
+#
+# Groups
+#
+if {[catch {group get -using [list {Enable_signals}]}]} {
+set createdGroup([list {Enable_signals}]) 1
+catch {group new -name Enable_signals -overlay 0}
+}
+if {[catch {group get -using [list {block_status}]}]} {
+set createdGroup([list {block_status}]) 1
+catch {group new -name block_status -overlay 0}
+}
+if {[catch {group get -using [list {local_mask_change}]}]} {
+set createdGroup([list {local_mask_change}]) 1
+catch {group new -name local_mask_change -overlay 0}
+}
+if {[catch {group get -using [list {global_reconfig}]}]} {
+set createdGroup([list {global_reconfig}]) 1
+catch {group new -name global_reconfig -overlay 0}
+}
+if {[catch {group get -using [list {event_packets}]}]} {
+set createdGroup([list {event_packets}]) 1
+catch {group new -name event_packets -overlay 0}
+}
+if {[info exists createdGroup([list {Enable_signals}])]} {
+group using Enable_signals
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_local_event_handler.global_enable}]} ] \
+    [subst  {[format {tb_local_event_handler.cmd_blk_enable}]} ] \
+    [subst  {[format {tb_local_event_handler.dut.eff_enable}]} ]
+}
+
+if {[info exists createdGroup([list {block_status}])]} {
+group using block_status
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_local_event_handler.block_enabled}]} ] \
+    [subst  {[format {tb_local_event_handler.block_busy}]} ]
+}
+
+if {[info exists createdGroup([list {local_mask_change}])]} {
+group using local_mask_change
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_local_event_handler.cmd_apply_mask}]} ] \
+    [subst  {[format {tb_local_event_handler.mask_shadow[39:0]}]} ] \
+    [subst  {[format {tb_local_event_handler.pix_mask_active[39:0]}]} ]
+}
+
+if {[info exists createdGroup([list {global_reconfig}])]} {
+group using global_reconfig
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_local_event_handler.global_reconfig}]} ] \
+    [subst  {[format {tb_local_event_handler.mode_1bit}]} ] \
+    [subst  {[format {tb_local_event_handler.mode_1bit_active}]} ] \
+    [subst  {[format {tb_local_event_handler.new_NMAX[8:0]}]} ] \
+    [subst  {[format {tb_local_event_handler.NMAX_active[8:0]}]} ]
+}
+
+if {[info exists createdGroup([list {event_packets}])]} {
+group using event_packets
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+group insert \
+    [subst  {[format {tb_local_event_handler.event_ack}]} ] \
+    [subst  {[format {tb_local_event_handler.event_valid}]} ] \
+    [subst  {[format {tb_local_event_handler.event_type[3:0]}]} ] \
+    [subst  {[format {tb_local_event_handler.event_fifo_id[2:0]}]} ] \
+    [subst  {[format {tb_local_event_handler.event_time0[44:0]}]} ] \
+    [subst  {[format {tb_local_event_handler.event_time1[44:0]}]} ]
+}
+
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.clk40m}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.mission_counter[44:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.RESET}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.IDLE}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.CAPCHAT0}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.DISABLE_BLK}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.WAIT_FIFO_EMPTY}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.RESET_AFIFO}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.APPLY_CONFIG}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.ENABLE_BLK}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.CAPCHAT1}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.WAIT_EVENT_ACK}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.DOWN}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.mission_counter[44:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.rst_n}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.curr_state[3:0]}]}
+	} ]]
+waveform format $id -radix %d
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.dut.next_state[3:0]}]}
+	} ]]
+waveform format $id -radix %d
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.fifo_overflow[7:0]}]}
+	} ]]
+waveform hierarchy collapse $id
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.fifo_all_empty}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.acq_start_cmd}]}
+	} ]]
+
+set groupId0 [waveform add -groups Enable_signals]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups local_mask_change]
+
+
+set groupId0 [waveform add -groups global_reconfig]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups block_status]
+waveform hierarchy collapse $groupId0
+
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.afifo_reset_n}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.compressor_enable}]}
+	} ]]
+
+set groupId0 [waveform add -groups event_packets]
+waveform hierarchy collapse $groupId0
+
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.ACQ_START_T[44:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.BLK_DISABLE_T[44:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_local_event_handler.BLK_ENABLE_T[44:0]}]}
+	} ]]
+
+waveform xview limits 0 1613500ps
