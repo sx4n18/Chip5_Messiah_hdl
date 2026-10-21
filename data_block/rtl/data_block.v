@@ -7,6 +7,9 @@
 //  - CARR arbiter
 //  - packet_builder
 //	
+//  Ver 0.2
+//  Added additional port: acq_start_cmd, this is the port where we enbale the block to start acquisition
+//  Added the internal wire event_T_valid to connect newer version of local event handler and packet builder
 
 
 module data_block (
@@ -26,7 +29,7 @@ module data_block (
 	input					global_enable, 
 	input		[9:0]		new_NMAX, 
 	input 					mode_1bit, 
-
+	input 					acq_start_cmd,  // acquisition start command
 	// output to the system
 	output					block_busy, 
 	output 					block_enabled, 
@@ -73,6 +76,12 @@ module data_block (
 	wire [44:0] event_time0;
 	wire [44:0] event_time1;
 	wire event_ack;
+	// new in ver 0.2
+	wire event_T_valid;
+
+	wire encs_all_idle; 
+
+reg   fifo_all_empty_40m_meta, fifo_all_empty_40m_sync;
 
 local_event_handler i_local_event_handler (
 	.clk40m           (clk40m           ),
@@ -85,9 +94,13 @@ local_event_handler i_local_event_handler (
 	.global_enable    (global_enable    ),
 	.new_NMAX         (new_NMAX         ),
 	.mode_1bit        (mode_1bit        ),
+	//// ver 0.2
+	.acq_start_cmd    (acq_start_cmd	),
+	////
 	// connection with fifos
 	.fifo_overflow    (fifo_overflow    ),
-	.fifo_all_empty   (fifo_all_empty   ),
+	.fifo_all_empty   (fifo_all_empty_40m_sync   ),
+	.encs_all_idle	  (encs_all_idle),
 	.afifo_reset_n    (afifo_reset_n    ),
 	// components control
 	.mission_counter  (mission_cnt  ),
@@ -101,6 +114,7 @@ local_event_handler i_local_event_handler (
 	.block_enabled    (block_enabled    ),
 	// event bus
 	.event_valid      (event_valid      ),
+	.event_time_valid (event_T_valid    ),      ////////// new
 	.event_type       (event_type       ),
 	.event_fifo_id    (event_fifo_id    ),
 	.event_time0      (event_time0      ),
@@ -114,6 +128,7 @@ local_event_handler i_local_event_handler (
 wire	[7:0]		AFIFO_PUSH;
 wire	[127:0]		enc_2_afifo_DAT;
 
+wire 	[7:0] 		enc_idle;
 
 
 wire WRSTN; 				// needs to be modified 
@@ -144,7 +159,23 @@ assign RRSTN = rst_n & afifo_reset_n;
 	wire [15:0] MUX_OUT;
 
 
-assign fifo_all_empty = & EMPTY_75M;
+assign fifo_all_empty = & EMPTY_75M; // 75 mhz singal and-ed still in 75 mhz
+assign encs_all_idle = & enc_idle;  // naturally same clock domain as local event handler
+
+
+always @(posedge clk40m or negedge rst_n)
+begin 
+	if (!rst_n) begin
+		fifo_all_empty_40m_meta <= 0;
+		fifo_all_empty_40m_sync <= 0;
+	end
+	else begin 
+		fifo_all_empty_40m_meta <= fifo_all_empty;
+		fifo_all_empty_40m_sync <= fifo_all_empty_40m_meta;
+	end
+end
+
+
 
 genvar i;
 
@@ -163,6 +194,7 @@ generate
  		.pix_gray(pix_value[15*i +: 15]),				// 15-bit pixel values, in gray code
 
 	 	.enc_ready(AFIFO_PUSH[i]), 			// 1-bit pulse for encoding ready
+	 	.enc_idle(enc_idle[i]),						// added encoder idle indicator
 	 	.enc_data(enc_2_afifo_DAT[16*i +: 16])        	// encoded 16-bit data 	
 	
 );
@@ -216,6 +248,7 @@ packet_builder i_packet_builder (
 	.CLK75M          (clk75m          ),
 	.rst_n           (rst_n           ),
 	.event_valid     (event_valid     ),
+	.event_time_valid(event_T_valid   ), ////////////////////new  in ver 0.3.1
 	.event_type      (event_type      ),
 	.event_fifo_id   (event_fifo_id   ),
 	.event_time0     (event_time0     ),

@@ -1,0 +1,97 @@
+
+#
+# Mnemonic Maps
+#
+mmap new  -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new  -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+array unset createdGroup
+array set createdGroup {}
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.rstn}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.clk40m}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.error_count}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.one_bit}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.EN}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.output_count}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.pix_valid}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.pix_gray[14:0]}]}
+	} ]]
+waveform hierarchy collapse $id
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.pix_mask[4:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.expected_ready}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.expected_data[15:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.silence_counter[14:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.acc_counter[1:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.acc_temp_pattern[9:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.pixel_1bit[4:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.enc_ready}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.enc_data[15:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.current_state[2:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.next_state[2:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.IDLE}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.PUSH}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.WAIT}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.ALARM}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.PUSH3}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.WAIT3}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.ALARM3}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_row_encode_5p_1bit.dut.FLUSH}]}
+	} ]]
+
+waveform xview limits 5290455ps 6610078ps

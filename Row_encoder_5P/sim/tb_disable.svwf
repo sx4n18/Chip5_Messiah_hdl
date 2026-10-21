@@ -1,0 +1,60 @@
+
+#
+# Mnemonic Maps
+#
+mmap new  -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new  -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+array unset createdGroup
+array set createdGroup {}
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.clk40m}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.EN}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.rstn}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.one_bit}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.pix_valid}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.pix_mask[4:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.pix_gray[14:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.enc_ready}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.enc_data[15:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.dut.current_state[2:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.dut.next_state[2:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.dut.repeating_pattern[14:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.dut.silence_counter[14:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.dut.wake_up_flag}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb_disable.dut.data_flag}]}
+	} ]]
+
+waveform xview limits 0 2000ps

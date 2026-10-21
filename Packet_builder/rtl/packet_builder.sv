@@ -7,11 +7,13 @@
 // and
 // Frame fifo almost full case. 
 //
-// ver. 0.3
+// Ver. 0.3
 // This version is the updated packet builder that implemented the following changes:
 //  + Renamed the module to packet_builder instead of Packet_builder
 //  + Added ports and states to interact with local event handler to handle special events
 //  + Added extra state to export META info (pkt_type)
+// Ver. 0.3.1
+// This is simply a minor iteration to add the support for event_time_valid
 
 module packet_builder #(parameter int N_CH = 8) (
 	input 	CLK75M,    // Clock, 75 Mhz
@@ -23,6 +25,7 @@ module packet_builder #(parameter int N_CH = 8) (
     input       [2:0]   event_fifo_id, 
     input       [44:0]  event_time0, 
     input       [44:0]  event_time1, 
+    input               event_time_valid,   // simple reg to indicate the completion of the encapsulation of packets.
 
     output  logic       event_ack,
 
@@ -69,6 +72,7 @@ typedef enum logic [4:0] {
     TYPE_EVENT, // export type of events that happened
     EVE_TIMET0, // export the start time of the event
     EVE_TIMET1, // export the ending time of the event
+    WAIT_TIME1, // wait for the time1 to be ready to safely sample.
     EVE_FIFO_ID, // export the event fifo id, only applicable for overflow
     INTRP_END,  // finishing handling interrupt
     WAIT_ACK   // wait for the acknowledge signal to be recognised
@@ -99,6 +103,8 @@ reg [13:0] frame_cnt;
 
 reg  event_valid_meta, event_valid_sync;
 
+reg  event_time_valid_meta, event_time_valid_sync;
+
 reg [1:0] event_t0_t1_cnt; // count to 3, since we need to stay in eve_time0 and eve_time1 for 3 cycles
 
 reg [47:0] event_time_buf;
@@ -108,9 +114,13 @@ always_ff @(posedge CLK75M or negedge rst_n) begin
     if(~rst_n) begin
         event_valid_meta <= 0;
         event_valid_sync <= 0;
+        event_time_valid_meta <= 0;
+        event_time_valid_sync <= 0;
     end else begin
         event_valid_meta <= event_valid;
         event_valid_sync <= event_valid_meta;
+        event_time_valid_meta <= event_time_valid;
+        event_time_valid_sync <= event_time_valid_meta;
     end
 end
 
@@ -249,11 +259,25 @@ always @(posedge CLK75M or negedge rst_n) begin
                 else
                 begin
                     event_t0_t1_cnt <= '0;
-                    event_time_buf <= event_time1;
+                    if (event_time_valid_sync) begin
+                        event_time_buf <= {3'b000, event_time1};
+                    end
                 end
             end
 
+            EVE_FIFO_ID:                // state that can only occur in overflow case
+            begin 
+                if (event_time_valid_sync) begin    
+                    event_time_buf <= {3'b000, event_time1};
+                end
+            end
 
+            WAIT_TIME1: 
+            begin 
+                if (event_time_valid_sync) begin
+                    event_time_buf <=  {3'b000, event_time1};
+                end
+            end
 
 
             EVE_TIMET1: 
@@ -472,8 +496,13 @@ always @(*) begin
                 if (event_type == '0) begin // overflow type
                     next_state = EVE_FIFO_ID;
                 end
-                else begin 
-                    next_state = EVE_TIMET1;
+                else begin
+                    if (event_time_valid_sync) begin
+                        next_state = EVE_TIMET1; // if the event information is complete and stable
+                     end
+                    else begin 
+                        next_state = WAIT_TIME1; // wait for the last piece of the event to be finished
+                    end 
                 end
             end
         end
@@ -482,8 +511,23 @@ always @(*) begin
         begin 
             FRAME_FIFO_PUSH = 1;
             DATA_2_FIFO = {13'd0, event_fifo_id}; // 13-bit + 3-bit id --> 16 bit data
-            next_state = EVE_TIMET1;        // export event time t1 next
+            if (event_time_valid_sync) begin
+               next_state = EVE_TIMET1; // export event time t1 next since it is now ready
+            end
+            else begin 
+                next_state = WAIT_TIME1;  // event time T1 is not ready to sample, we wait
+            end
+                    
         end
+
+        WAIT_TIME1: 
+        begin 
+            if (event_time_valid_sync) begin  // DO NOTHING BUT WAIT
+                next_state = EVE_TIMET1;
+            end
+        end
+
+
 
         EVE_TIMET1: // same logic to export the event timer t1
         begin 

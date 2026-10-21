@@ -25,7 +25,10 @@
 //	5. When in silence mode, and the internal counter reaches 7FFF, we export a wrap word
 //	   0x8000
 //
-
+//  Ver. 0.1.1
+//  
+//  Added one additional port to alert the local event handler, the module is now in IDLE state.
+//  So the local event handler can make sure the block is not producing any more word after getting disabled
 
 
 module Row_encode_5P (
@@ -41,7 +44,8 @@ module Row_encode_5P (
 	input 		[14:0]  pix_gray,				// 15-bit pixel values, in gray code
 
 	output 	reg			enc_ready, 			// 1-bit pulse for encoding ready
-	output 	reg	[15:0]  enc_data        	// encoded 16-bit data 	
+	output 	reg	[15:0]  enc_data,        	// encoded 16-bit data 	
+	output 	reg 		enc_idle		// new port added to flag idle state
 	
 
 );
@@ -411,11 +415,12 @@ begin
 	next_state = current_state;
 	enc_data = 0;
 	enc_ready = 0;
-
+	enc_idle = 0;
 	case (current_state)
 
 		IDLE: 
 		begin
+			enc_idle = 1;
 			if (EN) begin
 				if (pix_valid_rise) begin
 					if (mode) begin
