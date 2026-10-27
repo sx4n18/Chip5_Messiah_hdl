@@ -26,7 +26,7 @@ module packet_builder #(parameter int N_CH = 8) (
     // interface from local event handler
     input               event_valid,        // the event valid signal that comes from local event handler, which lives in 40 MHz
     input       [3:0]   event_type, 
-    input       [2:0]   event_fifo_id, 
+    input       [7:0]   event_fifo_id,      // changed the overflow fifo information from 3-bit to 8-bit
     input       [44:0]  event_time0, 
     input       [44:0]  event_time1, 
     input               event_time_valid,   // simple reg to indicate the completion of the encapsulation of packets.
@@ -536,7 +536,8 @@ always @(*) begin
         EVE_FIFO_ID: // export the overflow id
         begin 
             FRAME_FIFO_PUSH = 1;
-            DATA_2_FIFO = {13'd0, event_fifo_id}; // 13-bit + 3-bit id --> 16 bit data
+            //DATA_2_FIFO = {13'd0, event_fifo_id}; // 13-bit + 3-bit id --> 16 bit data
+            DATA_2_FIFO = {8'd0, event_fifo_id};  // 8-bit + 8-bit id --> 16-bit data, new in Ver 0.3.2
             if (event_time_valid_sync) begin
                next_state = EVE_TIMET1; // export event time t1 next since it is now ready
             end

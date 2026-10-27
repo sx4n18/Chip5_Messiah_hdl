@@ -54,9 +54,9 @@
 // 
 //  New edit: 21 Oct 2026
 //  Ver. 0.1.3
-//  Register the afifo_reset_n. Also added mask_pend and reconf_pend blocks to make sure we are not missing commands when fifo is 
+//  + Register the afifo_reset_n. Also added mask_pend and reconf_pend blocks to make sure we are not missing commands when fifo is 
 //  overflowing during IDLE state or at other state. 
-//  
+//  + Change the event fifo ID to 8-bit instead using a one-hot encoder
 module local_event_handler (
 	input clk40m,    			// Clock runs at the same freqeuncy as the front end
 	input rst_n,  				// Asynchronous reset active low
@@ -110,7 +110,7 @@ module local_event_handler (
 	output 	reg 		event_valid, 
 	output  reg 		event_time_valid, 	// special valid signal to indicate the validity of event time1
 	output	reg [3:0]	event_type, 
-	output	reg [2:0]	event_fifo_id, 
+	output	reg [7:0]	event_fifo_id, 		// Changed 3-bit to 8-bit for full fifo overflow status in Ver 0.1.3
 	output	reg [44:0] 	event_time0, 
 	output	reg [44:0]	event_time1, 
 
@@ -144,9 +144,13 @@ localparam 			BLK_DISABLE_REQ = 4'h3;
 
 wire 		[2:0]	encoded_1hot_fifo_id;
 
+/*
+Removed the one hot encoder in Ver 0.1.3, and we will transmit the whole fifo overflow status 
 onehot_encoder onehot_fixed_prio_encoder (
 	.fifo_overflow(fifo_overflow),
 	.fifo_id(encoded_1hot_fifo_id) );
+*/
+
 
 // registers 
 
@@ -173,7 +177,7 @@ assign block_enabled = compressor_enable;
 reg 	mask_pend, reconf_pend;
 wire  	in_idle = (curr_state == IDLE) && !fifo_overflow_event; // overflow keeps priority
 wire  	take_mask = in_idle && mask_pend;
-wire 	take_reconf = in_idle && reconf_pend;
+wire 	take_reconf = in_idle && !mask_pend && reconf_pend;
 
 always @(posedge clk40m or negedge rst_n)
 begin
@@ -272,7 +276,7 @@ always @(posedge clk40m or negedge rst_n) begin
 			// fifo overflow, it should handle this automatically without external command
 			if (fifo_overflow) begin
 				event_type <= FIFO_OF;
-				event_fifo_id <=  encoded_1hot_fifo_id;
+				event_fifo_id <=  fifo_overflow;
 				// flag block to be busy
 				block_busy <= 1;
 			end
@@ -541,6 +545,8 @@ end
 
 endmodule
 
+/*
+This has been removed from the desgn in Ver 0.1.3
 
 module  onehot_encoder(
 	input 		[7:0] 	fifo_overflow,
@@ -572,3 +578,4 @@ end
 
 
 endmodule
+*/

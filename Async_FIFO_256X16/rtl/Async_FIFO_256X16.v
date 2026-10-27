@@ -30,7 +30,9 @@
 // Added new features:
 // + Change this design into a real prefetch async FIFO to connect the data output to the RAM port.
 // + Added a new port to output empty signal from 40 Mhz clock domain
-
+// Ver 1.1
+// Added the actual read address logic to make this FIFO a true pre-fetch FIFO that supports back-to-back READ
+// wire [8:0] rd_addr =  read_prt_bin + POP_OK;
 
 module Async_FIFO_256X16 (
 
@@ -105,6 +107,12 @@ reg FULL_REG;
 
 wire PUSH_OK, POP_OK;
 
+// additional bit to make the FIFO a true pre-fetch FIFO with the ability for back-to-back pop
+// Ver  1.1 new
+
+wire [8:0]  rd_addr; 
+assign rd_addr =  read_prt_bin + POP_OK; // --> points to addr P when idle, but points to addr P+1 when we are doing pop pulse
+
 // generate gray code from binary value
 assign write_prt_gray = Bin2Gray(write_prt_bin);
 assign read_prt_gray = Bin2Gray(read_prt_bin);
@@ -178,7 +186,7 @@ begin
 	if(~WRSTN) begin
 		FULL_REG <= 0;
 	end else begin
-		FULL_REG <= (next_write_gray == {~read_prt_gray_sync_2[8:7], read_prt_gray_sync_2[6:0]}) ;
+		FULL_REG <= #1 (next_write_gray == {~read_prt_gray_sync_2[8:7], read_prt_gray_sync_2[6:0]}) ;
 	end
 end
 
@@ -238,7 +246,10 @@ wire [15:0] DOB;
 
 FSA0A_C_DPSRAM DPRAM_inst (
 	.A   (write_prt_bin[7:0]   ),
-	.B   (read_prt_bin[7:0]   ),
+	// Not True pre-fetch
+	//.B   (read_prt_bin[7:0]   ),
+	// True pre-fetch
+	.B(rd_addr[7:0]),
 	.DIA (DATAIN ),	// write data into FIFO
 	.DIB (DIB ),	// DO NOT CONNECT
 	.OEA (1'b0 ), // side A always 0, do not output
@@ -298,6 +309,7 @@ SZ180_256X16X1CM4 i_SZ180_256X16X1CM4 (
 	.DI13(DATAIN[13]),
 	.DI14(DATAIN[14]),
 	.DI15(DATAIN[15]),
+	/* Not true pre-fetch
 	.A0  (read_prt_bin[0]  ),
 	.A1  (read_prt_bin[1]  ),
 	.A2  (read_prt_bin[2]  ),
@@ -306,6 +318,16 @@ SZ180_256X16X1CM4 i_SZ180_256X16X1CM4 (
 	.A5  (read_prt_bin[5]  ),
 	.A6  (read_prt_bin[6]  ),
 	.A7  (read_prt_bin[7]  ),
+	*/
+	// True pre-fetch
+	.A0  (rd_addr[0]  ),
+	.A1  (rd_addr[1]  ),
+	.A2  (rd_addr[2]  ),
+	.A3  (rd_addr[3]  ),
+	.A4  (rd_addr[4]  ),
+	.A5  (rd_addr[5]  ),
+	.A6  (rd_addr[6]  ),
+	.A7  (rd_addr[7]  ),
 	.B0  (write_prt_bin[0]  ),
 	.B1  (write_prt_bin[1]  ),
 	.B2  (write_prt_bin[2]  ),
@@ -399,6 +421,8 @@ SJ180_256X16X1CM4 DPRAM_inst (
 	.A5   (write_prt_bin[5]   ),
 	.A6   (write_prt_bin[6]   ),
 	.A7   (write_prt_bin[7]   ),
+	// not True pre-fetch 
+	/*
 	.B0   (read_prt_bin[0]   ),
 	.B1   (read_prt_bin[1]   ),
 	.B2   (read_prt_bin[2]   ),
@@ -407,6 +431,16 @@ SJ180_256X16X1CM4 DPRAM_inst (
 	.B5   (read_prt_bin[5]   ),
 	.B6   (read_prt_bin[6]   ),
 	.B7   (read_prt_bin[7]   ),
+	*/
+	// True pre-fetch 
+	.B0   (rd_addr[0]   ),
+	.B1   (rd_addr[1]   ),
+	.B2   (rd_addr[2]   ),
+	.B3   (rd_addr[3]   ),
+	.B4   (rd_addr[4]   ),
+	.B5   (rd_addr[5]   ),
+	.B6   (rd_addr[6]   ),
+	.B7   (rd_addr[7]   ),
 	.OEA  (1'b0  ),
 	.OEB  (1'b1  ),
 	.WEAN (1'b0 ),

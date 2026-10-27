@@ -8,3 +8,5 @@
 `include "packet_builder.sv"
 `include "Row_encoder_5P.v"
 `include "data_block.v"
+`include "SJ180_256X16X1CM4.v"
+`include "SZ180_256X16X1CM4.v"

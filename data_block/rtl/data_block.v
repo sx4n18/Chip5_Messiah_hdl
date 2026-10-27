@@ -132,6 +132,18 @@ local_event_handler i_local_event_handler (
 
 wire	[7:0]		AFIFO_PUSH;
 wire	[127:0]		enc_2_afifo_DAT;
+wire [7:0] POP_PX_FIFO;
+// simulation only
+
+wire 	[7:0]      AFIFO_PUSH_DL;
+wire 	[127:0]    enc_2_afifo_DAT_DL;
+wire    [7:0]      POP_PX_FIFO_DY;
+
+assign #1 AFIFO_PUSH_DL =  AFIFO_PUSH;
+assign #1 enc_2_afifo_DAT_DL = enc_2_afifo_DAT;
+assign #1 POP_PX_FIFO_DY = POP_PX_FIFO;
+// sim only
+
 
 wire 	[7:0] 		enc_idle;
 
@@ -187,7 +199,7 @@ end
 	// added new empty flag for local event handler that lives in 40 mhz
 	wire [7:0] EMPTY_40M;					
 	wire [7:0] ALMOST_FULL_75M;
-	wire [7:0] POP_PX_FIFO;
+	
 	wire [127:0] DATA_FROM_ASYNC_FIFO;
 	// ARB <-> PB
 	wire DO_POP_SLOT;			// REQ
@@ -196,7 +208,7 @@ end
 	wire [15:0] MUX_OUT;
 
 
-assign fifo_all_empty_40m = & EMPTY_40M; // 75 mhz singal and-ed still in 75 mhz
+assign fifo_all_empty_40m = & EMPTY_40M; // brand new singal and-ed to be in 40 mhz
 assign encs_all_idle = & enc_idle;  // naturally same clock domain as local event handler
 
 /*
@@ -236,14 +248,15 @@ generate
 	
 );
 
+
 	Async_FIFO_256X16 i_Async_FIFO_256X16 (
 	.CLK40M         (clk40m               ),
-	.DATAIN         (enc_2_afifo_DAT[16*i +: 16]               ),
-	.PUSH           (AFIFO_PUSH[i]      ),
+	.DATAIN         (enc_2_afifo_DAT_DL[16*i +: 16]               ),
+	.PUSH           (AFIFO_PUSH_DL[i]      ),
 	.WRSTN          (WRSTN                ),
 	.FULL_40M       (fifo_overflow[i]             ),
 	.CLK75M         (clk75m               ),
-	.POP            (POP_PX_FIFO[i]),
+	.POP            (POP_PX_FIFO_DY[i]),
 	.RRSTN          (RRSTN                ),
 	.ALMOST_FULL_75M(ALMOST_FULL_75M[i]      ), // TODO: Check connection ! Signal/port not matching : Expecting logic  -- Found logic [7:0] 
 	.EMPTY_75M      (EMPTY_75M[i]            ), // TODO: Check connection ! Signal/port not matching : Expecting logic  -- Found logic [7:0] 
