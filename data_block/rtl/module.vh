@@ -1,0 +1,10 @@
+// module components.
+`include "Async_FIFO_256X16.v"
+`include "CARR_arb.sv"
+`include "CARR_ARB_MUX.sv"
+`include "FSAOA_C_DPSRAM.v"
+`include "local_event_handler.v"
+`include "mission_counter.v"
+`include "packet_builder.sv"
+`include "Row_encoder_5P.v"
+`include "data_block.v"

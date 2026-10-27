@@ -10,7 +10,10 @@
 //  Ver 0.2
 //  Added additional port: acq_start_cmd, this is the port where we enbale the block to start acquisition
 //  Added the internal wire event_T_valid to connect newer version of local event handler and packet builder
-
+// 
+//  Ver 0.3
+//  Changes made to accomodate the new ports added in Async fifo, EMPTY_40M, since the local event handler needs this signal.
+//  
 
 module data_block (
 
@@ -62,7 +65,8 @@ module data_block (
 // instantiate the local event handler
 
 	wire [7:0] fifo_overflow;
-	wire fifo_all_empty;
+	// fifo all empty from the empty flag from AFIFOs at 40 Mhz
+	wire fifo_all_empty_40m;
 
 	wire compressor_enable;
 	wire afifo_reset_n;
@@ -81,7 +85,8 @@ module data_block (
 
 	wire encs_all_idle; 
 
-reg   fifo_all_empty_40m_meta, fifo_all_empty_40m_sync;
+// No longer needed since we added the 40 mhz empty flag from AFIFO
+// reg   fifo_all_empty_40m_meta, fifo_all_empty_40m_sync;
 
 local_event_handler i_local_event_handler (
 	.clk40m           (clk40m           ),
@@ -99,7 +104,7 @@ local_event_handler i_local_event_handler (
 	////
 	// connection with fifos
 	.fifo_overflow    (fifo_overflow    ),
-	.fifo_all_empty   (fifo_all_empty_40m_sync   ),
+	.fifo_all_empty   (fifo_all_empty_40m   ),
 	.encs_all_idle	  (encs_all_idle),
 	.afifo_reset_n    (afifo_reset_n    ),
 	// components control
@@ -131,16 +136,46 @@ wire	[127:0]		enc_2_afifo_DAT;
 wire 	[7:0] 		enc_idle;
 
 
-wire WRSTN; 				// needs to be modified 
-wire RRSTN;
+wire WRSTN_raw; 				// needs to be modified 
+wire RRSTN_raw;
 
 
 // for simulation simplicity only, we have the following
+// Added reset synchronisation for AFIFO's write and read side
 
-// TODO: THEY NEED TO BE SYNC-ED INTO THE CLOCK DOMAIN
+assign WRSTN_raw = rst_n & afifo_reset_n;
+assign RRSTN_raw = rst_n & afifo_reset_n;  
 
-assign WRSTN = rst_n & afifo_reset_n;
-assign RRSTN = rst_n & afifo_reset_n;  
+// reset synchronisation for AFIFO
+reg wrstn_x, WRSTN;
+
+always @(posedge clk40m or negedge WRSTN_raw)
+begin
+	if (!WRSTN_raw) begin
+		wrstn_x <= 0;
+		WRSTN   <= 0;
+	end
+	else  
+	begin 
+		wrstn_x <= 1;
+		WRSTN   <=  wrstn_x;	
+	end
+end
+
+reg rrstn_x, RRSTN;
+
+always @(posedge clk75m or negedge RRSTN_raw)
+begin 
+	if (!RRSTN_raw) begin
+		rrstn_x <= 0;
+		RRSTN   <= 0;
+	end
+	else begin 
+		rrstn_x <= 1;
+		RRSTN   <= rrstn_x;
+	end
+end
+
 
 
 // wires 
@@ -148,7 +183,9 @@ assign RRSTN = rst_n & afifo_reset_n;
 // wires between AFIFO, ARB and PB
 	
 	// AFIFO <-> ARB
-	wire [7:0] EMPTY_75M;	// THIS ALSO GOES TO PB TO MAKE PB STOP REQ					
+	wire [7:0] EMPTY_75M;	// THIS ALSO GOES TO PB TO MAKE PB STOP REQ
+	// added new empty flag for local event handler that lives in 40 mhz
+	wire [7:0] EMPTY_40M;					
 	wire [7:0] ALMOST_FULL_75M;
 	wire [7:0] POP_PX_FIFO;
 	wire [127:0] DATA_FROM_ASYNC_FIFO;
@@ -159,10 +196,10 @@ assign RRSTN = rst_n & afifo_reset_n;
 	wire [15:0] MUX_OUT;
 
 
-assign fifo_all_empty = & EMPTY_75M; // 75 mhz singal and-ed still in 75 mhz
+assign fifo_all_empty_40m = & EMPTY_40M; // 75 mhz singal and-ed still in 75 mhz
 assign encs_all_idle = & enc_idle;  // naturally same clock domain as local event handler
 
-
+/*
 always @(posedge clk40m or negedge rst_n)
 begin 
 	if (!rst_n) begin
@@ -174,7 +211,7 @@ begin
 		fifo_all_empty_40m_sync <= fifo_all_empty_40m_meta;
 	end
 end
-
+*/
 
 
 genvar i;
@@ -210,6 +247,8 @@ generate
 	.RRSTN          (RRSTN                ),
 	.ALMOST_FULL_75M(ALMOST_FULL_75M[i]      ), // TODO: Check connection ! Signal/port not matching : Expecting logic  -- Found logic [7:0] 
 	.EMPTY_75M      (EMPTY_75M[i]            ), // TODO: Check connection ! Signal/port not matching : Expecting logic  -- Found logic [7:0] 
+	// updated port with empty flag for 40 Mhz
+	.EMPTY_40M      (EMPTY_40M[i]			),
 	.DATAOUT        (DATA_FROM_ASYNC_FIFO[16*i +: 16]  )
 );
 	end
@@ -224,7 +263,7 @@ endgenerate
 
 CARR_ARB_MUX i_CARR_ARB_MUX (
 	.CLK75M               (clk75m               ),
-	.rst_n                (rst_n                ),
+	.rst_n                (RRSTN                ), // we now also reset the arbiter after draining the FIFO
 	.MAX_READS            (NMAX_active          ),
 	.EMPTY_75M            (EMPTY_75M            ),
 	.ALMOST_FULL_75M      (ALMOST_FULL_75M      ),
@@ -255,6 +294,7 @@ packet_builder i_packet_builder (
 	.event_time1     (event_time1     ),
 	.event_ack       (event_ack       ),
 	.data_valid      (DAT_VALID_OF_THIS_POP      ),
+	.mode_1bit_active(mode_1bit_active), // new in ver. 0.3.2
 	.FIFO_DAT        (MUX_OUT        ),
 	.SEL_ID          (SEL_FIFO_IDQ          ),
 	.EMPTY           (EMPTY_75M       ),

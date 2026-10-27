@@ -14,6 +14,10 @@
 //  + Added extra state to export META info (pkt_type)
 // Ver. 0.3.1
 // This is simply a minor iteration to add the support for event_time_valid
+// Ver. 0.3.2
+// + A slightly modified version to register event_ack, since this value needs to cross clock domain.
+// + Added frame fifo afull check during IDLE state so we are not proceeding
+// + Added mode_1_bit to be included in the meta data
 
 module packet_builder #(parameter int N_CH = 8) (
 	input 	CLK75M,    // Clock, 75 Mhz
@@ -26,7 +30,9 @@ module packet_builder #(parameter int N_CH = 8) (
     input       [44:0]  event_time0, 
     input       [44:0]  event_time1, 
     input               event_time_valid,   // simple reg to indicate the completion of the encapsulation of packets.
-
+    // added 1-bit mode indicator to be synced Ver. 0.3.2
+    input               mode_1bit_active, 
+    //
     output  logic       event_ack,
 
 	// interface input from arbiter
@@ -105,6 +111,8 @@ reg  event_valid_meta, event_valid_sync;
 
 reg  event_time_valid_meta, event_time_valid_sync;
 
+reg  mode_1bit_active_meta, mode_1bit_active_sync; 
+
 reg [1:0] event_t0_t1_cnt; // count to 3, since we need to stay in eve_time0 and eve_time1 for 3 cycles
 
 reg [47:0] event_time_buf;
@@ -116,11 +124,15 @@ always_ff @(posedge CLK75M or negedge rst_n) begin
         event_valid_sync <= 0;
         event_time_valid_meta <= 0;
         event_time_valid_sync <= 0;
+        mode_1bit_active_meta <= 0;
+        mode_1bit_active_sync <= 0;         
     end else begin
         event_valid_meta <= event_valid;
         event_valid_sync <= event_valid_meta;
         event_time_valid_meta <= event_time_valid;
         event_time_valid_sync <= event_time_valid_meta;
+        mode_1bit_active_meta <= mode_1bit_active;
+        mode_1bit_active_sync <= mode_1bit_active_meta; 
     end
 end
 
@@ -174,6 +186,8 @@ always @(posedge CLK75M or negedge rst_n) begin
         payload_pending <= 0;
         event_t0_t1_cnt <= 0;
         event_time_buf <= 0;
+        // new addition in Ver. 0.3.2
+        event_ack   <= 0;
     end
     else begin
 
@@ -291,13 +305,23 @@ always @(posedge CLK75M or negedge rst_n) begin
                 end
             end
 
+            INTRP_END: 
+            begin
+                event_ack <= 1;
+            end
+
+            WAIT_ACK: 
+            begin 
+                if (!event_valid_sync) begin
+                    event_ack <= 0;
+                end
+            end
+
 
         	default: /* */; 
         endcase
        end
 end
-
-
 
 
 
@@ -315,20 +339,22 @@ always @(*) begin
     
     do_pop_slot = 0;
     // new output in ver 0.3
-    event_ack = 0;
+    // event_ack = 0;
     case (curr_state)
 
-    	IDLE: // absolute idle state because FIFO is empty
+    	IDLE: // absolute idle state because AFIFO is empty
     	begin
+            if (!FRAME_FIFO_AFULL) begin // check if AFIFO is almost full before pushing
+            // This is okay because event will not go away
             // module prioritise the process for interrupt over normal process
-            if (event_valid_sync) begin
-                 next_state = INTRP_STA;
-            end
-            else 
-    		if (data_fifo_not_empty) begin
-    			next_state = FRAME_START;
-    		end
-    	end
+                if (event_valid_sync) begin
+                     next_state = INTRP_STA;
+                end
+                else if (data_fifo_not_empty) begin
+    			     next_state = FRAME_START;
+    		    end
+    	   end
+        end
 
     	FRAME_START:
     	begin 
@@ -349,7 +375,7 @@ always @(*) begin
 
     	METADATA: 
     	begin 
-    		DATA_2_FIFO = {2'b00, frame_cnt};
+    		DATA_2_FIFO = {mode_1bit_active_sync,1'b0, frame_cnt};
     		FRAME_FIFO_PUSH = 1;
     		next_state = HDR_WORD;
     	end
@@ -547,7 +573,7 @@ always @(*) begin
 
         WAIT_ACK: 
         begin 
-            event_ack = 1;
+            //event_ack = 1;
             if (!event_valid_sync) begin
                 next_state = IDLE;
             end

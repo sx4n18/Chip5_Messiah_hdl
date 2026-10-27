@@ -51,7 +51,12 @@
 //  
 //  On top of it, I added register AFIFO_DRAIN_CNT to make sure FSM to wait at least 5 cycles before checking the clear signals
 //  from both producers and consumers. In this case, *encs_all_idle* and *fifo_all_empty*
-
+// 
+//  New edit: 21 Oct 2026
+//  Ver. 0.1.3
+//  Register the afifo_reset_n. Also added mask_pend and reconf_pend blocks to make sure we are not missing commands when fifo is 
+//  overflowing during IDLE state or at other state. 
+//  
 module local_event_handler (
 	input clk40m,    			// Clock runs at the same freqeuncy as the front end
 	input rst_n,  				// Asynchronous reset active low
@@ -161,6 +166,28 @@ assign fifo_overflow_event = |fifo_overflow;
 
 assign block_enabled = compressor_enable;
 
+////////////////////////////////////////////////////////
+//		extra pending block
+//////////////////////////////////////////////////////
+
+reg 	mask_pend, reconf_pend;
+wire  	in_idle = (curr_state == IDLE) && !fifo_overflow_event; // overflow keeps priority
+wire  	take_mask = in_idle && mask_pend;
+wire 	take_reconf = in_idle && reconf_pend;
+
+always @(posedge clk40m or negedge rst_n)
+begin
+	if(!rst_n) begin 
+		mask_pend <= 0;
+		reconf_pend <= 0;	
+	end
+	else 
+	begin 
+		mask_pend <= cmd_apply_mask | (mask_pend & ~take_mask);
+		reconf_pend <= global_reconfig | (reconf_pend & ~take_reconf);
+	end
+end
+
 
 ////////////////////////////////////////////////////////
 //		effective enable
@@ -199,7 +226,7 @@ end
 
 
 /////////////////////////////////////////////////////////////
-//				current state logic sequential
+//		current state logic sequential
 /////////////////////////////////////////////////////////////
 
 always @(posedge clk40m or negedge rst_n) begin
@@ -249,12 +276,12 @@ always @(posedge clk40m or negedge rst_n) begin
 				// flag block to be busy
 				block_busy <= 1;
 			end
-			else if (cmd_apply_mask) begin
+			else if (take_mask) begin
 				// local cmd mask
 				event_type <= LCAL_MSK_CHANGE;
 				block_busy <= 1;
 			end
-			else if (global_reconfig) begin 
+			else if (take_reconf) begin 
 				event_type <= GLB_1_BIT_MODE;
 				block_busy <= 1;
 			end
@@ -362,6 +389,28 @@ always @(posedge clk40m or negedge rst_n) begin
 end
 
 
+/////////////////////////////////////////////////////////////
+//		Patch to register reset
+/////////////////////////////////////////////////////////////
+
+always @(posedge clk40m or negedge rst_n)
+begin
+	if (!rst_n) begin
+		afifo_reset_n <= 1;
+	end
+	else if (next_state == RESET_AFIFO)
+	begin
+		afifo_reset_n <= 0;
+	end
+	else begin 
+		afifo_reset_n <= 1;
+	end
+	
+
+
+end
+
+
 
 /////////////////////////////////////////////////////////////
 //				next state logic 
@@ -373,7 +422,7 @@ begin
 
 // by default the outputs and next state should be:
 next_state = curr_state; 
-afifo_reset_n = 1;
+
 
 case (curr_state)
 
@@ -388,7 +437,7 @@ case (curr_state)
 		IDLE: begin 
 			// normal functional states for the block
 			// if any of fifo overflow or local config or global config happens, an event is raised
-			if (fifo_overflow || cmd_apply_mask || global_reconfig) begin
+			if (fifo_overflow || mask_pend || reconf_pend) begin
 				next_state = CAPCHAT0;
 			end
 			else if (!eff_enable) begin 
@@ -420,7 +469,7 @@ case (curr_state)
 
 		RESET_AFIFO:
 		begin 
-			afifo_reset_n = 0;
+
 
 			if (event_type == FIFO_OF) begin
 				next_state = ENABLE_BLK;

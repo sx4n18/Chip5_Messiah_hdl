@@ -24,6 +24,14 @@
 //__________________________________________________
 // The future version should change this design so that Async_FIFO should always be a prefetch FIFO, POP should only update the read pointer
 //
+// Ver 1.0
+// In this version, we fixed the following known bugs:
+// + register FULL_REG is assigned on the write-side clock and therefore should be reset by WRSTN instead of RRSTN
+// Added new features:
+// + Change this design into a real prefetch async FIFO to connect the data output to the RAM port.
+// + Added a new port to output empty signal from 40 Mhz clock domain
+
+
 module Async_FIFO_256X16 (
 
 
@@ -44,6 +52,8 @@ module Async_FIFO_256X16 (
 
 		output 			ALMOST_FULL_75M,	// This is the almost full flag that should be synced to 75MHz
 		output			EMPTY_75M, 			// Naturally the EMPTY_75M flag that works at the read side, 75 MHz
+		// new port added to output empty signals from 40 Mhz clock domain
+		output          EMPTY_40M, 
 		output [15:0]	DATAOUT			// Popped data from FIFO.
 
 
@@ -158,12 +168,14 @@ end
 // read pointer at the write clock domain of 40 MHz
 
 assign read_prt_W = Gray2Bin(read_prt_gray_sync_2);
+// added new empty signal in 40 Mhz
+assign EMPTY_40M = (write_prt_gray == read_prt_gray_sync_2);
 
 // register full flag
 
-always @(posedge CLK40M or negedge RRSTN) 
+always @(posedge CLK40M or negedge WRSTN) 
 begin 
-	if(~RRSTN) begin
+	if(~WRSTN) begin
 		FULL_REG <= 0;
 	end else begin
 		FULL_REG <= (next_write_gray == {~read_prt_gray_sync_2[8:7], read_prt_gray_sync_2[6:0]}) ;
@@ -412,13 +424,15 @@ SJ180_256X16X1CM4 DPRAM_inst (
 
 `endif
 
-
+/*
 `ifdef NEXT_CYCLE_READ
 	assign DATAOUT = DOB;
 `else 
 	assign DATAOUT = POP? DOB: 16'd0;
 `endif
+*/
 
+assign DATAOUT = DOB;
 
 endmodule
 
