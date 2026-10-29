@@ -29,7 +29,9 @@
 //  
 //  Added one additional port to alert the local event handler, the module is now in IDLE state.
 //  So the local event handler can make sure the block is not producing any more word after getting disabled
-
+//
+//  Ver. 0.1.2
+//  Fix the little inconsistency of the reset value for mode, where we normally by default turn 3-bit mode on.
 
 module Row_encode_5P (
 	
@@ -170,7 +172,7 @@ begin
 		data_flag <= 0;
 		first_push <= 1;
 		wake_up_flag <= 0;
-		mode <= 1;
+		mode <= 0;
 	end
 	else begin
 		

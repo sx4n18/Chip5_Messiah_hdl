@@ -33,7 +33,14 @@
 // Ver 1.1
 // Added the actual read address logic to make this FIFO a true pre-fetch FIFO that supports back-to-back READ
 // wire [8:0] rd_addr =  read_prt_bin + POP_OK;
-
+// Registered the value the need to cross the clock domain, aka write_prt_gray and read_prt_gray
+// so bsacially:           reg
+//                          | 
+//                          V                 reg
+// next_write_bin  --> write_prt_bin           |
+//      |                                      V
+//    B2G_conv --> next_write_gray ----> write_prt_gray 
+// where write_prt_bin updates the same time as write_prt_gray
 module Async_FIFO_256X16 (
 
 
@@ -114,12 +121,38 @@ wire [8:0]  rd_addr;
 assign rd_addr =  read_prt_bin + POP_OK; // --> points to addr P when idle, but points to addr P+1 when we are doing pop pulse
 
 // generate gray code from binary value
-assign write_prt_gray = Bin2Gray(write_prt_bin);
-assign read_prt_gray = Bin2Gray(read_prt_bin);
+//assign write_prt_gray = Bin2Gray(write_prt_bin);
+//assign read_prt_gray = Bin2Gray(read_prt_bin);
 assign PUSH_OK = PUSH && ~FULL_40M;
 assign POP_OK = POP && ~EMPTY_75M;
 assign next_write_gray = Bin2Gray(write_prt_bin+ PUSH_OK);
 assign next_read_gray = Bin2Gray(read_prt_bin+ POP_OK);
+
+// Register the value that needs to cross the clock domain
+// write pointer gray value, which should update the same time as binary value
+always @(posedge CLK40M or negedge WRSTN)
+begin 
+	if (!WRSTN) begin
+		write_prt_gray <=  0;
+	end
+	else  begin 
+		write_prt_gray <=  next_write_gray;
+	end
+end
+
+// read pointer gray value, which should update the same time as read pointer binary value
+always @(posedge CLK75M or negedge RRSTN)
+begin 
+	if (!RRSTN) begin
+		read_prt_gray <= 0;
+	end
+	else begin
+		read_prt_gray <=  next_read_gray;
+	end
+end
+
+
+
 
 
 // cross clock domain crossing
